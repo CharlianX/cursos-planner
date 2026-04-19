@@ -1,4 +1,3 @@
-// Definimos el tamaño fijo de nuestra "Hoja"
 const BASE_WIDTH = 2500;
 const BASE_HEIGHT = 1500;
 const wrapper = document.getElementById('canvas-wrapper');
@@ -12,41 +11,30 @@ const canvas = new fabric.Canvas('pizarra', {
 canvas.freeDrawingBrush.color = '#000000';
 canvas.freeDrawingBrush.width = 5;
 
+// FIX LOCAL DEL RELLENO NEGRO
 canvas.on('path:created', function(opt) {
-    // Obtenemos el trazo recién creado
-    const nuevoTrazo = opt.path;
-    
-    // Le decimos: ¡Ey, tu relleno debe ser nulo (transparente)!
-    nuevoTrazo.set({
-        fill: null // <-- Esta es la línea clave
-    });
-    
-    // Y pedimos al canvas que se actualice
+    opt.path.set({ fill: null });
     canvas.renderAll();
 });
 
 // --- SISTEMA DE PÁGINAS ---
-let paginas = [ null ]; // Array que guarda los lienzos en formato JSON
+let paginas = [ null ]; 
 let paginaActual = 0;
-
 const pageIndicator = document.getElementById('pageIndicator');
 
-function guardarPaginaActual() {
-    paginas[paginaActual] = JSON.stringify(canvas.toJSON());
-}
-
-// Haz el canvas global para que sync.js lo vea
 window.canvas = canvas; 
 window.paginaActual = 0;
+
+function guardarPaginaActual() {
+    paginas[paginaActual] = JSON.stringify(canvas.toJSON(['id']));
+}
 
 function cargarPagina(index) {
     window.paginaActual = index;
     canvas.clear();
     canvas.backgroundColor = '#ffffff';
     
-    // Avisar a Firebase que cambie de nodo
     if (window.escucharCambios) {
-        // Limpiamos los listeners anteriores para no duplicar
         window.escucharCambios(); 
     }
     
@@ -90,10 +78,9 @@ document.getElementById('btnDelPage').addEventListener('click', () => {
 
 // --- HERRAMIENTAS (Pincel, Mover, Figuras) ---
 const btnPincel = document.getElementById('btnPincel');
-const btnBorrador = document.getElementById('btnBorrador'); // ¡Aquí llega el borrador!
+const btnBorrador = document.getElementById('btnBorrador'); 
 const btnMover = document.getElementById('btnMover');
 
-// Función maestra para controlar qué botón está iluminado
 function desactivarBotones() {
     btnPincel.classList.remove('active');
     if (btnBorrador) btnBorrador.classList.remove('active');
@@ -106,22 +93,19 @@ function activarModoMover() {
     btnMover.classList.add('active');
 }
 
-// --- PINCEL ---
 btnPincel.addEventListener('click', () => {
     canvas.isDrawingMode = true;
-    // Restauramos el color y grosor por si veníamos del borrador
     canvas.freeDrawingBrush.color = document.getElementById('colorPicker').value;
     canvas.freeDrawingBrush.width = parseInt(document.getElementById('lineWidth').value, 10);
     desactivarBotones();
     btnPincel.classList.add('active');
 });
 
-// --- BORRADOR CLÁSICO ---
 if (btnBorrador) {
     btnBorrador.addEventListener('click', () => {
         canvas.isDrawingMode = true;
-        canvas.freeDrawingBrush.color = '#ffffff'; // Color de la hoja (blanco)
-        canvas.freeDrawingBrush.width = parseInt(document.getElementById('lineWidth').value, 10) * 2; // Doble grosor para borrar mejor
+        canvas.freeDrawingBrush.color = '#ffffff'; 
+        canvas.freeDrawingBrush.width = parseInt(document.getElementById('lineWidth').value, 10) * 2; 
         desactivarBotones();
         btnBorrador.classList.add('active');
     });
@@ -129,10 +113,8 @@ if (btnBorrador) {
 
 btnMover.addEventListener('click', activarModoMover);
 
-// --- CONTROLES DE GROSOR, COLOR Y LIMPIAR ---
 document.getElementById('colorPicker').addEventListener('input', (e) => {
     canvas.freeDrawingBrush.color = e.target.value;
-    // Si cambias el color mientras usabas el borrador, te regresamos al pincel automáticamente
     if (btnBorrador && btnBorrador.classList.contains('active')) {
         btnPincel.click();
     }
@@ -140,7 +122,6 @@ document.getElementById('colorPicker').addEventListener('input', (e) => {
 
 document.getElementById('lineWidth').addEventListener('input', (e) => {
     let width = parseInt(e.target.value, 10);
-    // Si el borrador está activo, mantenemos la lógica de que sea el doble de grueso
     if (btnBorrador && btnBorrador.classList.contains('active')) {
         canvas.freeDrawingBrush.width = width * 2;
     } else {
@@ -153,7 +134,6 @@ document.getElementById('clear').addEventListener('click', () => {
     canvas.backgroundColor = '#ffffff'; 
 });
 
-// --- FIGURAS ---
 document.getElementById('btnRect').addEventListener('click', () => {
     const rect = new fabric.Rect({ left: 100, top: 100, fill: document.getElementById('colorPicker').value, width: 100, height: 100 });
     canvas.add(rect); activarModoMover();
@@ -164,7 +144,6 @@ document.getElementById('btnCirc').addEventListener('click', () => {
     canvas.add(circ); activarModoMover();
 });
 
-// --- IMÁGENES ---
 document.getElementById('btnImg').addEventListener('click', () => document.getElementById('imageUpload').click());
 document.getElementById('imageUpload').addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -178,7 +157,6 @@ document.getElementById('imageUpload').addEventListener('change', function(e) {
     if (file) reader.readAsDataURL(file);
 });
 
-// --- BORRADOR DE OBJETOS (Teclado) ---
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Backspace' || e.key === 'Delete') {
         const objetosActivos = canvas.getActiveObjects();
@@ -191,12 +169,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// --- FIX DEL RELLENO NEGRO ---
-canvas.on('path:created', function(opt) {
-    opt.path.set({ fill: null }); // ¡Magia anti-manchas negras!
-    canvas.renderAll();
-});
-// --- ZOOM Y SCROLL (Adaptado para las Barritas) ---
+// --- ZOOM Y SCROLL ---
 let currentZoom = 1;
 
 canvas.on('mouse:wheel', function(opt) {
@@ -211,7 +184,6 @@ canvas.on('mouse:wheel', function(opt) {
     opt.e.stopPropagation();
 });
 
-// Mover con el ratón usando Alt + Click (ahora mueve el scroll, no la cámara virtual)
 canvas.on('mouse:down', function(opt) {
     if (opt.e.altKey === true) {
         this.isDragging = true;
@@ -236,7 +208,7 @@ canvas.on('mouse:up', function() {
     this.selection = true;
 });
 
-// --- GESTOS IPAD (Dos dedos) ---
+// --- GESTOS IPAD ---
 let isPinching = false;
 let initialZoom = 1;
 let touchStartDist = 0;
@@ -259,8 +231,6 @@ canvas.upperCanvasEl.addEventListener('touchstart', function(e) {
 canvas.upperCanvasEl.addEventListener('touchmove', function(e) {
     if (isPinching && e.touches.length === 2) {
         e.preventDefault();
-        
-        // ZOOM
         let dx = e.touches[0].pageX - e.touches[1].pageX;
         let dy = e.touches[0].pageY - e.touches[1].pageY;
         currentZoom = initialZoom * (Math.hypot(dx, dy) / touchStartDist);
@@ -270,7 +240,6 @@ canvas.upperCanvasEl.addEventListener('touchmove', function(e) {
         canvas.setZoom(currentZoom);
         canvas.setDimensions({ width: BASE_WIDTH * currentZoom, height: BASE_HEIGHT * currentZoom });
         
-        // SCROLL
         let centerX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
         let centerY = (e.touches[0].pageY + e.touches[1].pageY) / 2;
         wrapper.scrollLeft -= (centerX - lastTouchX);
@@ -299,7 +268,7 @@ window.addEventListener('paste', (e) => {
             const reader = new FileReader();
             reader.onload = (event) => {
                 fabric.Image.fromURL(event.target.result, (img) => {
-                    img.scaleToWidth(400); // Tamaño inicial razonable
+                    img.scaleToWidth(400); 
                     canvas.add(img);
                     canvas.centerObject(img);
                     activarModoMover();
@@ -309,4 +278,4 @@ window.addEventListener('paste', (e) => {
             reader.readAsDataURL(blob);
         }
     }
-})
+});
