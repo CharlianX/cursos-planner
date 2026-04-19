@@ -22,16 +22,21 @@ function guardarPaginaActual() {
     paginas[paginaActual] = JSON.stringify(canvas.toJSON());
 }
 
+// Haz el canvas global para que sync.js lo vea
+window.canvas = canvas; 
+window.paginaActual = 0;
+
 function cargarPagina(index) {
-    if (paginas[index]) {
-        canvas.loadFromJSON(paginas[index], () => {
-            canvas.renderAll();
-        });
-    } else {
-        canvas.clear();
-        canvas.backgroundColor = '#ffffff';
-        canvas.renderAll();
+    window.paginaActual = index;
+    canvas.clear();
+    canvas.backgroundColor = '#ffffff';
+    
+    // Avisar a Firebase que cambie de nodo
+    if (window.escucharCambios) {
+        // Limpiamos los listeners anteriores para no duplicar
+        window.escucharCambios(); 
     }
+    
     pageIndicator.textContent = `${index + 1} / ${paginas.length}`;
 }
 
