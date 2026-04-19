@@ -1,7 +1,7 @@
 body, html {
     margin: 0;
     padding: 0;
-    height: 100dvh; /* <-- El truco mágico para el iPad */
+    height: 100dvh;
     overflow: hidden;
     font-family: sans-serif;
     background-color: #ecf0f1;
@@ -9,7 +9,7 @@ body, html {
 
 .toolbar {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     justify-content: center;
     align-items: center;
     background: white;
@@ -17,6 +17,7 @@ body, html {
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     position: relative;
     z-index: 10;
+    flex-wrap: wrap; /* <-- Permite que los botones bajen de línea si no caben */
 }
 
 .control {
@@ -25,13 +26,14 @@ body, html {
 }
 
 button {
-    padding: 10px 15px;
+    padding: 8px 12px;
     cursor: pointer;
     background-color: #f8f9fa;
     border: 2px solid transparent;
     border-radius: 8px;
     font-weight: bold;
     transition: all 0.2s;
+    font-size: 14px;
 }
 
 button.active {
@@ -44,7 +46,6 @@ button.danger {
     color: white;
 }
 
-/* Fabric genera unos contenedores extra, nos aseguramos de que no hagan cosas raras */
 .canvas-container {
     margin: 0 auto;
     touch-action: none;
