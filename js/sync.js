@@ -25,13 +25,14 @@ function initSync() {
     const canvas = window.canvas;
     let isImporting = false; 
 
+    // ¡NUEVO! Variables para guardar las cancelaciones de escucha
+    let unsubAdd, unsubChange, unsubRemove;
+
     // --- ENVIAR DATOS A FIREBASE ---
     canvas.on('object:added', (e) => {
         if (isImporting || e.target.id) return; 
         
         const obj = e.target;
-
-        // ¡ESCUDO ANTI-MANCHAS NEGRAS PARA FIREBASE!
         if (obj.type === 'path') {
             obj.set({ fill: null });
         }
@@ -45,7 +46,6 @@ function initSync() {
         if (isImporting) return;
         const obj = e.target;
         if (obj.id) {
-            // Re-aseguramos que no lleve relleno por si acaso
             if (obj.type === 'path') obj.set({ fill: null });
             const data = obj.toObject(['id']);
             set(ref(db, `pizarras/sala1/pagina_${window.paginaActual}/${obj.id}`), data);
@@ -63,16 +63,23 @@ function initSync() {
 
     // --- RECIBIR DATOS DE FIREBASE ---
     window.escucharCambios = () => {
+        // 1. ¡DESCONECTAR EL CHISME ANTERIOR!
+        // Si ya estábamos escuchando otra página, cancelamos esa escucha.
+        if (unsubAdd) unsubAdd();
+        if (unsubChange) unsubChange();
+        if (unsubRemove) unsubRemove();
+
+        // 2. CONECTAR AL CHISME NUEVO (Página actual)
         const currentRef = ref(db, `pizarras/sala1/pagina_${window.paginaActual}`);
         
-        onChildAdded(currentRef, (snapshot) => {
+        // Las funciones de Firebase retornan un "unsubscribe", lo guardamos en las variables
+        unsubAdd = onChildAdded(currentRef, (snapshot) => {
             const data = snapshot.val();
             const exists = canvas.getObjects().find(o => o.id === data.id);
             if (!exists) {
                 isImporting = true;
                 fabric.util.enlivenObjects([data], (objects) => {
                     objects.forEach(obj => {
-                        // Limpiamos la mancha también al recibir
                         if (obj.type === 'path') obj.set({ fill: null });
                         canvas.add(obj);
                     });
@@ -82,7 +89,7 @@ function initSync() {
             }
         });
 
-        onChildChanged(currentRef, (snapshot) => {
+        unsubChange = onChildChanged(currentRef, (snapshot) => {
             const data = snapshot.val();
             const obj = canvas.getObjects().find(o => o.id === data.id);
             if (obj) {
@@ -95,7 +102,7 @@ function initSync() {
             }
         });
 
-        onChildRemoved(currentRef, (snapshot) => {
+        unsubRemove = onChildRemoved(currentRef, (snapshot) => {
             const data = snapshot.val();
             const objABorrar = canvas.getObjects().find(o => o.id === data.id);
             if (objABorrar) {
