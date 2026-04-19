@@ -208,3 +208,24 @@ canvas.upperCanvasEl.addEventListener('touchend', function(e) {
         }
     }
 });
+
+window.addEventListener('paste', (e) => {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let index in items) {
+        const item = items[index];
+        if (item.kind === 'file') {
+            const blob = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                fabric.Image.fromURL(event.target.result, (img) => {
+                    img.scaleToWidth(400); // Tamaño inicial razonable
+                    canvas.add(img);
+                    canvas.centerObject(img);
+                    activarModoMover();
+                    canvas.renderAll();
+                });
+            };
+            reader.readAsDataURL(blob);
+        }
+    }
+});
