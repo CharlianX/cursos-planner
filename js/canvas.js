@@ -228,4 +228,4 @@ window.addEventListener('paste', (e) => {
             reader.readAsDataURL(blob);
         }
     }
-});
+})
