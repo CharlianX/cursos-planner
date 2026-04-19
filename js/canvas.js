@@ -5,51 +5,68 @@ const colorPicker = document.getElementById('colorPicker');
 const lineWidthInput = document.getElementById('lineWidth');
 
 let dibujando = false;
+let xAnterior = 0;
+let yAnterior = 0;
 
 // Configuración inicial del pincel
 ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
 
-// Función para empezar a dibujar
 function startDrawing(e) {
     dibujando = true;
-    draw(e);
+    const rect = canvas.getBoundingClientRect();
+    xAnterior = e.clientX - rect.left;
+    yAnterior = e.clientY - rect.top;
 }
 
-// Función para dejar de dibujar
 function stopDrawing() {
     dibujando = false;
     ctx.beginPath();
 }
 
-// Función principal de dibujo
 function draw(e) {
     if (!dibujando) return;
 
-    ctx.lineWidth = lineWidthInput.value;
-    ctx.strokeStyle = colorPicker.value;
-
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const xActual = e.clientX - rect.left;
+    const yActual = e.clientY - rect.top;
+    const color = colorPicker.value;
+    const grosor = lineWidthInput.value;
 
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
+    // 1. Dibujar en tu pantalla
+    drawLine(xAnterior, yAnterior, xActual, yActual, color, grosor);
 
-    // Futura integración con sync.js
-    // if (typeof broadcastStroke === 'function') {
-    //     broadcastStroke(x, y, colorPicker.value, lineWidthInput.value);
-    // }
+    // 2. Enviar a Firebase (si la conexión está lista)
+    if (typeof window.broadcastStroke === 'function') {
+        window.broadcastStroke(xAnterior, yAnterior, xActual, yActual, color, grosor);
+    }
+
+    // Actualizar coordenadas
+    xAnterior = xActual;
+    yAnterior = yActual;
 }
 
-// Event Listeners
+// Función maestra para dibujar líneas (la usas tú y tu amigo)
+function drawLine(x0, y0, x1, y1, color, width) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+// Exponemos la función para que Firebase pueda activarla desde sync.js
+window.drawExternally = drawLine;
+
+// Event Listeners del ratón
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
 
-// Limpiar lienzo
+// Limpiar lienzo local
 clearBtn.addEventListener('click', () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 });
