@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablón Colaborativo</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Tablón Colaborativo</h1>
+        <div class="toolbar">
+            <button id="clear">Limpiar Lienzo</button>
+            <div class="control">
+                <label>Color:</label>
+                <input type="color" id="colorPicker" value="#000000">
+            </div>
+            <div class="control">
+                <label>Grosor:</label>
+                <input type="range" id="lineWidth" min="1" max="20" value="3">
+            </div>
+        </div>
+        <canvas id="pizarra" width="800" height="600"></canvas>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/canvas.js"></script>
+    <script src="js/sync.js"></script>
+</body>
+</html>
