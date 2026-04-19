@@ -99,4 +99,45 @@ function initSync() {
 
     // Iniciar escucha inicial
     window.escucharCambios();
+
+    function initSync() {
+    const canvas = window.canvas;
+    let isImporting = false;
+
+    // --- ENVIAR A FIREBASE ---
+    
+    // ... (Mantén aquí tus eventos object:added y object:modified) ...
+
+    // NUEVO: Cuando se borra un objeto del canvas
+    canvas.on('object:removed', (e) => {
+        if (isImporting) return;
+        const obj = e.target;
+        if (obj.id) {
+            const itemRef = ref(db, `pizarras/sala1/pagina_${window.paginaActual}/${obj.id}`);
+            remove(itemRef); // Borra el dato en Firebase
+        }
+    });
+
+    // --- RECIBIR DE FIREBASE ---
+
+    window.escucharCambios = () => {
+        const currentRef = ref(db, `pizarras/sala1/pagina_${window.paginaActual}`);
+
+        // ... (Mantén aquí onChildAdded y onChildChanged) ...
+
+        // NUEVO: Cuando alguien más borra un objeto
+        onChildRemoved(currentRef, (snapshot) => {
+            const data = snapshot.val();
+            const objABorrar = canvas.getObjects().find(o => o.id === data.id);
+            if (objABorrar) {
+                isImporting = true;
+                canvas.remove(objABorrar);
+                canvas.renderAll();
+                isImporting = false;
+            }
+        });
+    };
+
+    window.escucharCambios();
+}
 }

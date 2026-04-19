@@ -12,6 +12,19 @@ const canvas = new fabric.Canvas('pizarra', {
 canvas.freeDrawingBrush.color = '#000000';
 canvas.freeDrawingBrush.width = 5;
 
+canvas.on('path:created', function(opt) {
+    // Obtenemos el trazo recién creado
+    const nuevoTrazo = opt.path;
+    
+    // Le decimos: ¡Ey, tu relleno debe ser nulo (transparente)!
+    nuevoTrazo.set({
+        fill: null // <-- Esta es la línea clave
+    });
+    
+    // Y pedimos al canvas que se actualice
+    canvas.renderAll();
+});
+
 // --- SISTEMA DE PÁGINAS ---
 let paginas = [ null ]; // Array que guarda los lienzos en formato JSON
 let paginaActual = 0;
@@ -77,26 +90,70 @@ document.getElementById('btnDelPage').addEventListener('click', () => {
 
 // --- HERRAMIENTAS (Pincel, Mover, Figuras) ---
 const btnPincel = document.getElementById('btnPincel');
+const btnBorrador = document.getElementById('btnBorrador'); // ¡Aquí llega el borrador!
 const btnMover = document.getElementById('btnMover');
+
+// Función maestra para controlar qué botón está iluminado
+function desactivarBotones() {
+    btnPincel.classList.remove('active');
+    if (btnBorrador) btnBorrador.classList.remove('active');
+    btnMover.classList.remove('active');
+}
 
 function activarModoMover() {
     canvas.isDrawingMode = false;
+    desactivarBotones();
     btnMover.classList.add('active');
-    btnPincel.classList.remove('active');
 }
 
+// --- PINCEL ---
 btnPincel.addEventListener('click', () => {
     canvas.isDrawingMode = true;
+    // Restauramos el color y grosor por si veníamos del borrador
+    canvas.freeDrawingBrush.color = document.getElementById('colorPicker').value;
+    canvas.freeDrawingBrush.width = parseInt(document.getElementById('lineWidth').value, 10);
+    desactivarBotones();
     btnPincel.classList.add('active');
-    btnMover.classList.remove('active');
 });
+
+// --- BORRADOR CLÁSICO ---
+if (btnBorrador) {
+    btnBorrador.addEventListener('click', () => {
+        canvas.isDrawingMode = true;
+        canvas.freeDrawingBrush.color = '#ffffff'; // Color de la hoja (blanco)
+        canvas.freeDrawingBrush.width = parseInt(document.getElementById('lineWidth').value, 10) * 2; // Doble grosor para borrar mejor
+        desactivarBotones();
+        btnBorrador.classList.add('active');
+    });
+}
 
 btnMover.addEventListener('click', activarModoMover);
 
-document.getElementById('colorPicker').addEventListener('input', (e) => canvas.freeDrawingBrush.color = e.target.value);
-document.getElementById('lineWidth').addEventListener('input', (e) => canvas.freeDrawingBrush.width = parseInt(e.target.value, 10));
-document.getElementById('clear').addEventListener('click', () => { canvas.clear(); canvas.backgroundColor = '#ffffff'; });
+// --- CONTROLES DE GROSOR, COLOR Y LIMPIAR ---
+document.getElementById('colorPicker').addEventListener('input', (e) => {
+    canvas.freeDrawingBrush.color = e.target.value;
+    // Si cambias el color mientras usabas el borrador, te regresamos al pincel automáticamente
+    if (btnBorrador && btnBorrador.classList.contains('active')) {
+        btnPincel.click();
+    }
+});
 
+document.getElementById('lineWidth').addEventListener('input', (e) => {
+    let width = parseInt(e.target.value, 10);
+    // Si el borrador está activo, mantenemos la lógica de que sea el doble de grueso
+    if (btnBorrador && btnBorrador.classList.contains('active')) {
+        canvas.freeDrawingBrush.width = width * 2;
+    } else {
+        canvas.freeDrawingBrush.width = width;
+    }
+});
+
+document.getElementById('clear').addEventListener('click', () => { 
+    canvas.clear(); 
+    canvas.backgroundColor = '#ffffff'; 
+});
+
+// --- FIGURAS ---
 document.getElementById('btnRect').addEventListener('click', () => {
     const rect = new fabric.Rect({ left: 100, top: 100, fill: document.getElementById('colorPicker').value, width: 100, height: 100 });
     canvas.add(rect); activarModoMover();
@@ -107,6 +164,7 @@ document.getElementById('btnCirc').addEventListener('click', () => {
     canvas.add(circ); activarModoMover();
 });
 
+// --- IMÁGENES ---
 document.getElementById('btnImg').addEventListener('click', () => document.getElementById('imageUpload').click());
 document.getElementById('imageUpload').addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -120,6 +178,24 @@ document.getElementById('imageUpload').addEventListener('change', function(e) {
     if (file) reader.readAsDataURL(file);
 });
 
+// --- BORRADOR DE OBJETOS (Teclado) ---
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+        const objetosActivos = canvas.getActiveObjects();
+        if (objetosActivos.length) {
+            objetosActivos.forEach((obj) => {
+                canvas.remove(obj);
+            });
+            canvas.discardActiveObject().renderAll();
+        }
+    }
+});
+
+// --- FIX DEL RELLENO NEGRO ---
+canvas.on('path:created', function(opt) {
+    opt.path.set({ fill: null }); // ¡Magia anti-manchas negras!
+    canvas.renderAll();
+});
 // --- ZOOM Y SCROLL (Adaptado para las Barritas) ---
 let currentZoom = 1;
 
