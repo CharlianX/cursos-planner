@@ -1,113 +1,92 @@
-const canvas = document.getElementById('pizarra');
-const ctx = canvas.getContext('2d');
-const clearBtn = document.getElementById('clear');
-const colorPicker = document.getElementById('colorPicker');
-const lineWidthInput = document.getElementById('lineWidth');
-const btnPincel = document.getElementById('btnPincel');
-const btnBorrador = document.getElementById('btnBorrador');
-
-let dibujando = false;
-let isEraser = false; // Variable para saber si estamos borrando
-let xAnterior = 0;
-let yAnterior = 0;
-
-// Ajustar el lienzo al tamaño de la pantalla
-function redimensionarCanvas() {
-    canvas.width = window.innerWidth;
-    // Le restamos el alto de la barra de herramientas
-    canvas.height = window.innerHeight - document.querySelector('.toolbar').offsetHeight;
-}
-window.addEventListener('resize', redimensionarCanvas);
-redimensionarCanvas(); // Ejecutar al cargar
-
-ctx.lineCap = 'round';
-ctx.lineJoin = 'round';
-
-// Botones de herramientas
-btnPincel.addEventListener('click', () => {
-    isEraser = false;
-    btnPincel.classList.add('active');
-    btnBorrador.classList.remove('active');
+// Inicializamos el lienzo avanzado con Fabric.js
+const canvas = new fabric.Canvas('pizarra', {
+    isDrawingMode: true,
+    backgroundColor: '#ffffff'
 });
 
-btnBorrador.addEventListener('click', () => {
-    isEraser = true;
-    btnBorrador.classList.add('active');
+// Ajustar tamaño a la pantalla
+function resizeCanvas() {
+    canvas.setWidth(window.innerWidth);
+    canvas.setHeight(window.innerHeight - document.querySelector('.toolbar').offsetHeight);
+    canvas.renderAll();
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Configuración inicial del pincel
+canvas.freeDrawingBrush.color = '#000000';
+canvas.freeDrawingBrush.width = 5;
+
+// --- CONTROLES DE LA INTERFAZ ---
+const btnPincel = document.getElementById('btnPincel');
+const btnMover = document.getElementById('btnMover');
+const colorPicker = document.getElementById('colorPicker');
+const lineWidthInput = document.getElementById('lineWidth');
+const clearBtn = document.getElementById('clear');
+
+btnPincel.addEventListener('click', () => {
+    canvas.isDrawingMode = true; // Activa el dibujo libre
+    btnPincel.classList.add('active');
+    btnMover.classList.remove('active');
+});
+
+btnMover.addEventListener('click', () => {
+    canvas.isDrawingMode = false; // Permite seleccionar y mover lo dibujado
+    btnMover.classList.add('active');
     btnPincel.classList.remove('active');
 });
 
-function startDrawing(e) {
-    dibujando = true;
-    const rect = canvas.getBoundingClientRect();
-    xAnterior = e.clientX - rect.left;
-    yAnterior = e.clientY - rect.top;
-}
+colorPicker.addEventListener('input', (e) => {
+    canvas.freeDrawingBrush.color = e.target.value;
+});
 
-function stopDrawing() {
-    dibujando = false;
-    ctx.beginPath();
-}
-
-function draw(e) {
-    if (!dibujando) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const xActual = e.clientX - rect.left;
-    const yActual = e.clientY - rect.top;
-    const color = colorPicker.value;
-    const grosor = lineWidthInput.value;
-
-    // 1. Dibujar localmente
-    drawLine(xAnterior, yAnterior, xActual, yActual, color, grosor, isEraser);
-
-    // 2. Enviar a Firebase (ahora incluye si es borrador o no)
-    if (typeof window.broadcastStroke === 'function') {
-        window.broadcastStroke(xAnterior, yAnterior, xActual, yActual, color, grosor, isEraser);
-    }
-
-    xAnterior = xActual;
-    yAnterior = yActual;
-}
-
-// Función maestra: Dibuja y decide si raspa la pintura (borrador) o aplica color (pincel)
-function drawLine(x0, y0, x1, y1, color, width, eraserMode) {
-    ctx.beginPath();
-    
-    if (eraserMode) {
-        ctx.globalCompositeOperation = 'destination-out'; // Actúa como borrador
-    } else {
-        ctx.globalCompositeOperation = 'source-over'; // Actúa como pincel normal
-        ctx.strokeStyle = color;
-    }
-    
-    ctx.lineWidth = width;
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
-    ctx.closePath();
-    
-    // Restaurar a pincel por defecto para no arruinar otros trazos
-    ctx.globalCompositeOperation = 'source-over';
-}
-
-window.drawExternally = drawLine;
-
-// Magia Apple Pencil y Táctil: pointerdown en vez de mousedown
-canvas.addEventListener('pointerdown', startDrawing);
-canvas.addEventListener('pointermove', draw);
-canvas.addEventListener('pointerup', stopDrawing);
-canvas.addEventListener('pointercancel', stopDrawing);
-canvas.addEventListener('pointerout', stopDrawing);
-
-// Limpiar lienzo
-window.clearLocalCanvas = function() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-};
+lineWidthInput.addEventListener('input', (e) => {
+    canvas.freeDrawingBrush.width = parseInt(e.target.value, 10);
+});
 
 clearBtn.addEventListener('click', () => {
-    if (typeof window.clearGlobalCanvas === 'function') {
-        window.clearGlobalCanvas();
-    } else {
-        window.clearLocalCanvas();
+    canvas.clear();
+    canvas.backgroundColor = '#ffffff';
+});
+
+// --- ZOOM Y PANEO (Movimiento de cámara) ---
+// Zoom in/out con rueda del ratón o gesto de pellizcar
+canvas.on('mouse:wheel', function(opt) {
+    var delta = opt.e.deltaY;
+    var zoom = canvas.getZoom();
+    zoom *= 0.999 ** delta;
+    if (zoom > 20) zoom = 20; // Zoom máximo
+    if (zoom < 0.1) zoom = 0.1; // Zoom mínimo
+    canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+    opt.e.preventDefault();
+    opt.e.stopPropagation();
+});
+
+// Paneo: Si mantienes la tecla 'Alt' presionada y arrastras, mueves el lienzo
+canvas.on('mouse:down', function(opt) {
+    var evt = opt.e;
+    if (evt.altKey === true) {
+        this.isDragging = true;
+        this.selection = false;
+        this.lastPosX = evt.clientX;
+        this.lastPosY = evt.clientY;
     }
+});
+
+canvas.on('mouse:move', function(opt) {
+    if (this.isDragging) {
+        var e = opt.e;
+        var vpt = this.viewportTransform;
+        vpt[4] += e.clientX - this.lastPosX;
+        vpt[5] += e.clientY - this.lastPosY;
+        this.requestRenderAll();
+        this.lastPosX = e.clientX;
+        this.lastPosY = e.clientY;
+    }
+});
+
+canvas.on('mouse:up', function(opt) {
+    this.setViewportTransform(this.viewportTransform);
+    this.isDragging = false;
+    this.selection = true;
 });

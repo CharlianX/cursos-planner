@@ -1,10 +1,10 @@
 body, html {
     margin: 0;
     padding: 0;
-    height: 100%;
-    overflow: hidden; /* Evita que la página haga scroll accidental */
+    height: 100dvh; /* <-- El truco mágico para el iPad */
+    overflow: hidden;
     font-family: sans-serif;
-    background-color: #e5e5e5;
+    background-color: #ecf0f1;
 }
 
 .toolbar {
@@ -13,10 +13,10 @@ body, html {
     justify-content: center;
     align-items: center;
     background: white;
-    padding: 15px;
+    padding: 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     position: relative;
-    z-index: 10; /* Se asegura de que la barra quede por encima del dibujo */
+    z-index: 10;
 }
 
 .control {
@@ -27,14 +27,13 @@ body, html {
 button {
     padding: 10px 15px;
     cursor: pointer;
-    background-color: #ecf0f1;
+    background-color: #f8f9fa;
     border: 2px solid transparent;
     border-radius: 8px;
     font-weight: bold;
     transition: all 0.2s;
 }
 
-/* Estilo para saber qué herramienta estamos usando */
 button.active {
     background-color: #3498db;
     color: white;
@@ -45,10 +44,8 @@ button.danger {
     color: white;
 }
 
-canvas {
-    display: block;
-    background-color: #ffffff;
-    cursor: crosshair;
-    /* ESTA LÍNEA ES MAGIA PARA EL IPAD: Evita gestos nativos de la tablet al tocar el canvas */
-    touch-action: none; 
+/* Fabric genera unos contenedores extra, nos aseguramos de que no hagan cosas raras */
+.canvas-container {
+    margin: 0 auto;
+    touch-action: none;
 }
