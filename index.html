@@ -1,13 +1,44 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>temp-app</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Charlie's Jamboard</title>
+    <link rel="icon" type="image/png" href="uwu.jpg">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+</head>
+<body>
+    <div class="toolbar">
+        <button id="btnPrev">◀</button>
+        <span id="pageIndicator" style="font-weight: bold;">1 / 1</span>
+        <button id="btnNext">▶</button>
+        <button id="btnAddPage">➕ Nueva Pág</button>
+        <button id="btnDelPage" class="danger">🗑️ Borrar Pág</button>
+        <button id="clear" class="danger">Limpiar Lienzo</button>
+    </div>
+
+    <div class="toolbar">
+        <button id="btnPincel" class="active">✏️ Pincel</button>
+        <button id="btnBorrador">🧼 Borrador</button>
+        <button id="btnMover">✋ Mover</button>
+        <button id="btnRect">🟩</button>
+        <button id="btnCirc">🔵</button>
+        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+        <button id="btnImg">🖼️</button>
+        <div class="control">
+            <input type="color" id="colorPicker" value="#000000">
+        </div>
+        <div class="control">
+            <input type="range" id="lineWidth" min="1" max="50" value="5">
+        </div>
+    </div>
+    
+    <div id="canvas-wrapper">
+        <canvas id="pizarra"></canvas>
+    </div>
+    
+    <script src="js/canvas.js"></script>
+    <script type="module" src="js/sync.js"></script>
+</body>
 </html>

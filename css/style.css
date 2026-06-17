@@ -1,0 +1,43 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100dvh;
+    overflow: hidden;
+    font-family: sans-serif;
+    background-color: #bdc3c7; /* Fondo gris para la zona exterior */
+}
+
+.toolbar {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    padding: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 10;
+    flex-wrap: wrap;
+}
+
+/* El nuevo contenedor que genera las barras de scroll */
+#canvas-wrapper {
+    width: 100vw;
+    /* Calculamos el alto restante restando aprox las dos barras de herramientas */
+    height: calc(100dvh - 120px); 
+    overflow: auto; /* Mágicamente añade barritas si la hoja no cabe */
+    touch-action: none;
+}
+
+.canvas-container {
+    margin: 40px auto; /* Centra la hoja y le da un margen */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); /* Sombra de hoja de papel */
+}
+
+.control { display: flex; align-items: center; }
+button {
+    padding: 8px 12px; cursor: pointer; background-color: #ecf0f1;
+    border: 2px solid transparent; border-radius: 8px; font-weight: bold; font-size: 14px;
+}
+button.active { background-color: #3498db; color: white; }
+button.danger { background-color: #e74c3c; color: white; }
