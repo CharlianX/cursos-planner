@@ -1,32 +1,16 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+require('reflect-metadata');
+const { NestFactory } = require('@nestjs/core');
+const { AppModule } = require('./dist/app.module');
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+let app;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Routes
-const authRoutes = require('./routes/auth');
-const materiasRoutes = require('./routes/materias');
-const planeacionesRoutes = require('./routes/planeaciones');
-
-app.use('/api/auth', authRoutes);
-app.use('/api/materias', materiasRoutes);
-app.use('/api/planeaciones', planeacionesRoutes);
-
-// Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/courseplanner')
-  .then(() => {
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch(err => {
-    console.error('Failed to connect to MongoDB', err);
-  });
+module.exports = async (req, res) => {
+  if (!app) {
+    app = await NestFactory.create(AppModule, { logger: false });
+    app.setGlobalPrefix('api');
+    app.enableCors();
+    await app.init();
+  }
+  const instance = app.getHttpAdapter().getInstance();
+  instance(req, res);
+};
